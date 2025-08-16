@@ -1,0 +1,6 @@
+#fastapi, sqlModel, WebSocket requirements
+fastapi
+sqlmodel
+websockets
+uvicorn
+pydantic
