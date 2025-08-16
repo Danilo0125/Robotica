@@ -1,0 +1,23 @@
+./aprendizaje
+# This file is managed by the system and should not be modified manually.
+
+# Firebase credentials
+*firebase-adminsdk*.json
+robotica2025-2ea37-firebase-adminsdk-fbsvc-310be74b7d.json
+
+# Environment variables
+.env
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
