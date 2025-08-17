@@ -1,88 +1,49 @@
-import firebase_admin
-from firebase_admin import credentials, firestore, storage
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import logging
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import Settings
-import os
+from app.core.firebase import init_firebase, shutdown_firebase
+from app.api.routes import all_http_routers
+from app.websocket.endpoints import ws_router
+from app.auth import router as auth_router
+from app.robot import router as robot_router
 
-# Load settings
 settings = Settings()
+logger = logging.getLogger("app")
+logging.basicConfig(level=logging.INFO)
 
-# Initialize Firebase
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize Firebase on startup
-    cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
-    firebase_app = firebase_admin.initialize_app(cred, {
-        'storageBucket': settings.FIREBASE_STORAGE_BUCKET,
-        'databaseURL': settings.FIREBASE_DATABASE_URL
-    })
-    
-    # Make Firebase instances available to the app
-    app.state.db = firestore.client()
-    app.state.bucket = storage.bucket()
-    
+    firebase_resources = init_firebase(settings)
+    if firebase_resources:
+        app.state.db = firebase_resources.db
+        app.state.bucket = firebase_resources.bucket
     yield
-    
-    # Clean up on shutdown
-    firebase_admin.delete_app(firebase_app)
+    shutdown_firebase(firebase_resources)
 
-# Create FastAPI app
-app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.VERSION,
-    lifespan=lifespan
-)
 
-# Configure CORS
+app = FastAPI(title=settings.APP_NAME, version=settings.VERSION, lifespan=lifespan)
+
+allow_origins = settings.ALLOWED_ORIGINS or ["*"]
+allow_methods = settings.ALLOWED_METHODS or ["*"]
+allow_headers = settings.ALLOWED_HEADERS or ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=allow_origins,
     allow_credentials=True,
-    allow_methods=settings.ALLOWED_METHODS,
-    allow_headers=settings.ALLOWED_HEADERS,
+    allow_methods=allow_methods,
+    allow_headers=allow_headers,
 )
 
-# WebSocket connection manager
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
+for r in all_http_routers:
+    app.include_router(r)
+app.include_router(auth_router)
+app.include_router(robot_router)
+app.include_router(ws_router)
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-manager = ConnectionManager()
-
-# Basic routes
-@app.get("/")
-async def root():
-    return {"message": "Welcome to Robotica Backend API"}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "ok", "version": settings.VERSION}
-
-# WebSocket endpoint
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            # Process the data here
-            await manager.broadcast(f"Message received: {data}")
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-        await manager.broadcast("Client disconnected")
-
-# You can add more routes and functionality here
+logger.info("HTTP + WebSocket endpoints registered.")

@@ -4,3 +4,6 @@ sqlmodel
 websockets
 uvicorn
 pydantic
+firebase-admin
+python-jose
+passlib[bcrypt]
