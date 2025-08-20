@@ -5,5 +5,6 @@ websockets
 uvicorn
 pydantic
 firebase-admin
-python-jose
+python-jose[cryptography]
+python-dotenv
 passlib[bcrypt]
