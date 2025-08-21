@@ -270,9 +270,9 @@ Este proyecto es parte del curso de Robótica - 8vo Semestre.
 ## 📞 Soporte
 
 Para preguntas o problemas:
-- 📧 Email: [tu-email@universidad.edu]
-- 🐛 Issues: [GitHub Issues](https://github.com/tu-usuario/robotica/issues)
-- 📚 Documentación: [Wiki del Proyecto](https://github.com/tu-usuario/robotica/wiki)
+- 📧 Email: [achavezc1@est.emi.edu.bo]
+- 🐛 Issues: [GitHub Issues](https://github.com/Danilo0125/robotica/issues)
+- 📚 Documentación: [Wiki del Proyecto](https://github.com/Danilo0125/robotica/wiki)
 
 ---
 
