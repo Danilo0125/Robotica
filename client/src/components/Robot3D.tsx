@@ -2,6 +2,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { useEffect, useRef, useState } from 'react'
 import { useSocket } from '../context/SocketContext'
+import { getRobotState } from '../services/api'
 
 interface State { base: number; hombro: number; codo: number }
 
@@ -118,6 +119,26 @@ export function Robot3D() {
   const { messages } = useSocket()
   const [targetState, setTargetState] = useState<State>({ base:0, hombro:0, codo:0 })
 
+  // Cargar estado inicial de la base de datos al montar el componente
+  useEffect(() => {
+    const loadInitialState = async () => {
+      try {
+        const initialState = await getRobotState()
+        setTargetState({
+          base: initialState.base ?? 0,
+          hombro: initialState.hombro ?? 0,
+          codo: initialState.codo ?? 0
+        })
+      } catch (error) {
+        console.warn('No se pudo cargar el estado inicial del robot:', error)
+        // Si hay error, mantener el estado por defecto (0,0,0)
+      }
+    }
+    
+    loadInitialState()
+  }, [])
+
+  // Actualizar estado desde mensajes WebSocket
   useEffect(() => {
     for (const raw of messages.slice(-10)) {
       try {
